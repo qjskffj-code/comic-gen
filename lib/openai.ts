@@ -1,4 +1,3 @@
-// ---- /lib/openai.ts ----
 import OpenAI from 'openai';
 
 export const openai = new OpenAI({
@@ -28,7 +27,7 @@ Instructions:
 `;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    const timeout = setTimeout(() => controller.abort(), 30000);
 
     const result = await openai.images.generate({
         prompt,
@@ -55,13 +54,30 @@ export async function generateSinglePanelImage(
     size: '1024x1024' | '1024x1536' | '1536x1024' = '1024x1024',
     quality: 'low' | 'medium' | 'high' | 'auto' = 'high',
     compression: number = 50,
-    output_format: 'jpeg' | 'png' = 'jpeg'
+    output_format: 'jpeg' | 'png' = 'jpeg',
+    modifier: string = 'flat vector'
 ): Promise<string> {
+    const styleGuide: Record<string, string> = {
+        'editorial': 'clean black and white editorial illustration, bold outlines, minimal shading, bright white background',
+        'manga': 'black and white manga style, bold outlines, screen tones, expressive eyes, bright background',
+        'cyberpunk': 'vibrant neon colors, futuristic setting, glowing lights, dark background with colorful accents',
+        'noir': 'high contrast black and white, dramatic shadows, film noir atmosphere',
+        'saturday morning': 'bright cheerful colors, round friendly shapes, white background, fun cartoon style',
+        'flat vector': 'flat vector illustration, bright white background, bold black outlines, zero shading, clean geometric shapes, colorful and minimal like a modern infographic',
+        'golden age': 'vintage comic style, warm colors, bold outlines, retro feeling',
+        'pixel art': 'pixel art style, 8-bit graphics, bright colors, clean pixels',
+        'pastel sketch': 'soft pastel colors, light sketch lines, gentle and warm, bright white background',
+    };
+
+    const styleInstruction = styleGuide[modifier] || `${modifier} style, bright background, clean illustration`;
+
     const prompt = `
-Draw a single-panel editorial cartoon using semi-realistic, expressive line art. Use cinematic framing, consistent character design, and moody lighting.
+Draw a single comic panel in this exact style: ${styleInstruction}.
 
 Scene: ${visual}
 Caption: "${caption}"
+
+Important: bright background, cheerful tone, simple and clean illustration. No dark or moody atmosphere.
 `;
 
     const controller = new AbortController();

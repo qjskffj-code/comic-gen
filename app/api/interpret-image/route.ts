@@ -1,4 +1,3 @@
-// ---- /app/api/interpret-image/route.ts ----
 "use server";
 
 import { NextRequest, NextResponse } from "next/server";
@@ -9,7 +8,7 @@ const openai = new OpenAI({
 });
 
 export async function POST(req: NextRequest) {
-    const { summary, modifier } = await req.json();
+    const { summary, modifier, context } = await req.json();
 
     if (!summary || summary.length < 50) {
         return NextResponse.json(
@@ -17,6 +16,11 @@ export async function POST(req: NextRequest) {
             { status: 400 }
         );
     }
+
+    const panelNumber = context ? context.length + 1 : 1;
+    const contextText = context && context.length > 0
+        ? `\n\nPrevious panels already created:\n${context.map((c: string, i: number) => `Panel ${i + 1}: ${c}`).join('\n')}\n\nNow create Panel ${panelNumber} only. It must be different from previous panels.`
+        : `\n\nCreate Panel 1 only.`;
 
     try {
         const completion = await openai.chat.completions.create({
@@ -27,28 +31,25 @@ export async function POST(req: NextRequest) {
                     role: "system",
                     content:
                         `You are a visual storytelling assistant skilled at turning article summaries into visual panel descriptions for a ${modifier}-style comic strip. ` +
-                        `Given a narrative summary of 2–6 sentences, convert it into a four-panel comic strip. ` +
-                        `Each panel must: Reflect a key moment, scene, or concept from the article. ` +
-                        `Include a short description of the panel's visuals. ` +
-                        `Include a caption that summarizes the message or quote from that part of the article. ` +
-                        `Use a clean, semi-realistic editorial cartoon style with a consistent character design and color palette across all panels. ` +
-                        `Apply visual metaphors and exaggeration where helpful. ` +
-                        `Return the output in the following format:\n` +
-                        `1. Panel 1: [Visual description] (Caption: "...")\n` +
-                        `2. Panel 2: [Visual description] (Caption: "...")\n` +
-                        `3. Panel 3: [Visual description] (Caption: "...")\n` +
-                        `4. Panel 4: [Visual description] (Caption: "...")\n` +
-                        `Do not add commentary or analysis. Only produce the panel descriptions and captions.`,
+                        `Given a narrative summary, create ONE panel description. ` +
+                        `The panel must: Reflect a key moment or concept from the summary. ` +
+                        `Include a short visual description. ` +
+                        `Include a caption that summarizes the message. ` +
+                        `Use a ${modifier} style with consistent character design. ` +
+                        `Return the output in this exact format:\n` +
+                        `Panel N: [Visual description] (Caption: "...")\n` +
+                        `Do not add commentary. Only produce one panel.`,
                 },
                 {
                     role: "user",
-                    content: summary,
+                    content: summary + contextText,
                 },
             ],
             store: false,
         });
 
         const script = completion.choices[0]?.message?.content?.trim() || "No comic script generated.";
+        console.log("AI SCRIPT OUTPUT:\n", script);
         return NextResponse.json({ script });
     } catch (err: unknown) {
         if (err instanceof Error) {

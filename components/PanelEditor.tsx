@@ -1,4 +1,3 @@
-// ---- /components/PanelEditor.tsx ----
 'use client';
 import { useState } from 'react';
 
@@ -10,7 +9,9 @@ interface PanelEditorProps {
     quality: 'low' | 'medium' | 'high' | 'auto';
     output_format: 'jpeg' | 'png';
     output_compression: number;
+    modifier: string;
     onAccept: (index: number, image: string) => void;
+    context?: string[];
 }
 
 export default function PanelEditor({
@@ -21,6 +22,7 @@ export default function PanelEditor({
     quality,
     output_format,
     output_compression,
+    modifier,
     onAccept,
 }: PanelEditorProps) {
     const [imageData, setImageData] = useState<string | null>(null);
@@ -38,7 +40,7 @@ export default function PanelEditor({
             const res = await fetch('/api/generate-image', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ visual, caption, size, quality, output_format, output_compression }),
+                body: JSON.stringify({ visual, caption, size, quality, output_format, output_compression, modifier }),
             });
             if (!res.ok) throw new Error(await res.text());
             const { url } = await res.json();
@@ -66,7 +68,7 @@ export default function PanelEditor({
         <div className="border rounded p-4 space-y-2">
             <h3 className="font-bold">Panel {index + 1}</h3>
             <p className="text-sm text-gray-800"><strong>Visual:</strong> {visual}</p>
-            <p className="text-sm text-gray-600"><strong>Caption:</strong> “{caption}”</p>
+            <p className="text-sm text-gray-600"><strong>Caption:</strong> "{caption}"</p>
 
             {!imageData && (
                 <button

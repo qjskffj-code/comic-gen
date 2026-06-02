@@ -1,4 +1,3 @@
-// ---- /components/StoryPanel.tsx ----
 'use client';
 import { useState } from 'react';
 import PanelEditor from './PanelEditor';
@@ -27,9 +26,7 @@ type Panel = {
 
 export default function StoryPanel({ modifiers }: Props) {
     const [prompt, setPrompt] = useState('');
-    // Modifier is now user-selectable
     const [modifier, setModifier] = useState(modifiers[0]);
-    // The rest are constants for now
     const size: SizeKey = 'square';
     const quality: Quality = 'high';
     const format: Format = 'jpeg';
@@ -65,33 +62,25 @@ export default function StoryPanel({ modifiers }: Props) {
         setLoading(false);
     }
 
-    function parsePanels(script: string): Panel[] {
-        const lines = script.split(/\r?\n/).filter(Boolean);
-        const panels: Panel[] = [];
+function parsePanels(script: string): Panel[] {
+    const lines = script.split(/\r?\n/).filter(Boolean);
+    const panels: Panel[] = [];
 
-        for (const line of lines) {
-            const trimmed = line.trim();
-            const match = /^(\d+\.\s*)?Panel\s*\d+:\s*(.*?)(?:\s*\(Caption:\s*["“](.*?)["”]\))?$/i.exec(trimmed);
+    for (const line of lines) {
+        const trimmed = line.trim();
+        const match = /^(?:\d+\.\s*)?Panel\s*\d+:\s*(.*?)\s*\(Caption:\s*["""](.+?)["""]\)/i.exec(trimmed);
 
-            if (match) {
-                const visual = match[2].trim();           // <-- use const
-                let caption = match[3]?.trim() || '';     // <-- keep let
-
-                if (caption.split(/\s+/).length > 20) {
-                    caption = caption.split(/\s+/).slice(0, 20).join(' ') + '…';
-                }
-
-                panels.push({ visual, caption, accepted: false });
-            } else {
-                panels.push({ visual: trimmed, caption: '', accepted: false });
-            }
-
-
-            if (panels.length >= 1) break;
+        if (match) {
+            const visual = match[1].trim();
+            const caption = match[2].trim();
+            panels.push({ visual, caption, accepted: false });
         }
 
-        return panels;
+        if (panels.length >= 1) break;
     }
+
+    return panels;
+}
 
     function handleAccept(index: number, image: string) {
         setPanels((prev) => {
@@ -148,7 +137,6 @@ export default function StoryPanel({ modifiers }: Props) {
                 onChange={(e) => setPrompt(e.target.value)}
             />
 
-            {/* Modifier dropdown */}
             <label className="block font-medium mt-4">Visual Style</label>
             <select
                 className="w-full p-2 border rounded"
@@ -189,6 +177,7 @@ export default function StoryPanel({ modifiers }: Props) {
                                 quality={quality}
                                 output_format={format}
                                 output_compression={compression}
+                                modifier={modifier}
                                 onAccept={handleAccept}
                                 context={panels
                                     .slice(0, idx)
